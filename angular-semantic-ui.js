@@ -228,38 +228,41 @@ angular.module('semantic-ui', [
 
         }, true );
       },
-      watcher: function (scope, expression, func, context, force, equals)
+      watcher: function(scope, expression, func, context, force, equals)
       {
-          var currentValue = angular.copy(scope[expression]);
+        var ignoreUpdate = false;
 
-          scope.$watch(expression, function (updated)
+        scope.$watch( expression, function( updated )
+        {
+          if ( !ignoreUpdate )
           {
-              if (expression != 'model' || !angular.equals(currentValue, updated))
-              {
-                  func.call(context, updated);
-              }
-
-          }, equals);
-
-          return {
-              set: function (value)
-              {
-                  if (scope[expression] != value || force)
-                  {
-                      scope.$evalAsync(function ()
-                      {
-                          scope[expression] = value;
-                          currentValue = angular.copy(scope[expression]);
-                      });
-                  }
-              },
-              update: function ()
-              {
-                  scope.$evalAsync(function ()
-                  {
-                  });
-              }
+            func.call( context, updated );
           }
+
+          ignoreUpdate = false;
+
+        }, equals );
+
+        return {
+          set: function(value)
+          {
+            if ( scope[ expression ] != value || force )
+            {
+              scope.$evalAsync(function()
+              {
+                scope[ expression ] = value;
+                ignoreUpdate = true;
+              });
+            }
+          },
+          update: function()
+          {
+            scope.$evalAsync(function()
+            {
+              ignoreUpdate = true;
+            });
+          }
+        }
       },
       RecursiveCompiler: function(postLink)
       {
@@ -1287,12 +1290,7 @@ angular.module('semantic-ui', [
     return function (scope, element, attributes) {
       var applyValue = function (value) {
         $timeout(function () {
-          if (value === null) {
-            element.dropdown('clear');
-          } else if(value === false){
-            // Do nothing
-          }
-          else if (element.dropdown('is multiple')) {
+          if (element.dropdown('is multiple')) {
             if (value instanceof Array) {
               var translatedValue = [];
 
@@ -1306,7 +1304,8 @@ angular.module('semantic-ui', [
 
               element.dropdown('set exactly', translatedValue);
             }
-          } else {
+          }
+          else {
             element.dropdown('set selected', scope.translateValue(value));
           }
         }, 0);
